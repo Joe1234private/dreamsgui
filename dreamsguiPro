@@ -1,6 +1,6 @@
 --by joey
 ---@diagnostic disable
-repeat task.wait() until game:IsLoaded()
+
 
 local isnetworkowner = isnetworkowner or function() return true end
 local cloneref = cloneref or function(instance) return instance end
